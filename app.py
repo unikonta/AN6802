@@ -1,10 +1,14 @@
 from flask import Flask, render_template, request
 import joblib
 import os
+from groq import Groq
+
 
 os.environ["GROQ_API_KEY"] = ""
 
 model = joblib.load("foodexp.pkl")
+
+client = Groq()
 app = Flask(__name__)
 
 
@@ -42,15 +46,33 @@ def foodExp():
 
 @app.route("/chatbot", methods=["get", "post"])
 def chatbot():
-    return(render_template("chatbot.html", r=r[0][0]))
+    return(render_template("chatbot.html"))
 
-@app.route("/roe", methods=["get", "post"])
+
+@app.route("/roe",methods=["get","post"])
 def roe():
-    return(render_template("roe.html", r=r[0][0]))
+    r = client.chat.completions.create(
+        model = "llama-3.1-8b-instant",
+        messages = [
+            {"role": "system", "content": "Please explain RoE in 20 words"}
+        ]
+    )
+    return(render_template("roe.html",r=r.choices[0].message.content))
 
-@app.route("/generalQuestions", methods=["get", "post"])
+@app.route("/generalQuestion", methods=["get", "post"])
 def generalQuestion():
-    return(render_template("generalQuestion.html", r=r[0][0]))
+    return(render_template("generalQuestion.html"))
+
+@app.route("/groqReply",methods=["get","post"])
+def groqReply():
+    q = request.form.get("q")
+    r = client.chat.completions.create(
+        model = "llama-3.1-8b-instant",
+        messages = [
+            {"role": "system", "content": q}
+        ]
+    )
+    return(render_template("groqReply.html",r=r.choices[0].message.content))
 
 if __name__ == "__main__":
     app.run()
